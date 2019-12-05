@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 
-public class MainReadingsPageActivity extends AppCompatActivity {
+public class MainReadingsPageActivity extends AppCompatActivity{
 
     BarChart chart1 ;
     BarChart chart2 ;
@@ -62,13 +62,13 @@ public class MainReadingsPageActivity extends AppCompatActivity {
 
         Bardataset1 = new BarDataSet(BARENTRY1, "Temperature Data in °C");
 //Change was made here after implementing firbase_bar
-        BARDATA1 = new BarData( BarEntryLabels1, Bardataset1);
+        BARDATA1 = new BarData( Bardataset1);
 
         Bardataset1.setColors(ColorTemplate.COLORFUL_COLORS);
 
         Bardataset2 = new BarDataSet(BARENTRY2, "Soil Moisture Data");
 
-        BARDATA2 = new BarData( BarEntryLabels2, Bardataset2);
+        BARDATA2 = new BarData( Bardataset2);
 
         Bardataset2.setColors(ColorTemplate.COLORFUL_COLORS);
 
@@ -132,6 +132,13 @@ public class MainReadingsPageActivity extends AppCompatActivity {
             //finish();
             return true;
         }
+        else if (id == R.id.action_FirebaseBar){
+            // TODO: Start the write option.
+            Intent FireBaseBar = new Intent(getApplicationContext(), Firebase_Bar.class);
+            startActivity(FireBaseBar);
+            //finish();
+            return true;
+        }
         else if (id == R.id.action_WaterSuppyControl){
             // TODO: Start the write option.
             Intent waterSupplyControl = new Intent(getApplicationContext(), WaterSupplyControlActivity.class);
@@ -174,6 +181,13 @@ public class MainReadingsPageActivity extends AppCompatActivity {
             // TODO: Start the write option.
             Intent writeData = new Intent(getApplicationContext(), Write_temperature.class);
             startActivity(writeData);
+            //finish();
+            return true;
+        }
+        else if (id == R.id.action_DisplayReadings){
+            // TODO: Start the write option.
+            Intent displayReadings = new Intent(getApplicationContext(), DisplayTempAndMoistureReadings.class);
+            startActivity(displayReadings);
             //finish();
             return true;
         }

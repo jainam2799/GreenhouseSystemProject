@@ -1,8 +1,8 @@
 package com.ceng319.greenhousesystemproject;
-/*
+
+
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +17,7 @@ import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.IAxisValueFormatter;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -35,8 +36,11 @@ public class Firebase_Bar extends AppCompatActivity {
 
     private BarChart barchart;
     private FirebaseDatabase database = null;
+    private FirebaseAuth mAuth;
+
+
     private DatabaseReference ref = null;
-    private int N = 20;
+    private int N = 7;
     String[] XLabels = new String[N];
     List<DataStructure> firebaseData = new ArrayList<>();
     private boolean firstTimeDrew;
@@ -44,14 +48,16 @@ public class Firebase_Bar extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_firebase__bar);
-        setupTitleandHomeButton();
+        setContentView(R.layout.activity_temperature_data);
+        //setupTitleandHomeButton();
         // TODO 1: Find the chart
         barchart = findViewById(R.id.firebasebar_chart);
 
         // TODO 2: Find the Database.
         database = FirebaseDatabase.getInstance();
-        ref = database.getReference("data");
+        mAuth = FirebaseAuth.getInstance();
+        String path = "userdata/" + mAuth.getUid();
+        ref = database.getReference(path);
 
         // TODO 3: Load the data from database.
         loadDatabase(ref);
@@ -61,7 +67,9 @@ public class Firebase_Bar extends AppCompatActivity {
 
     private void drawGraph() {
         if (firebaseData.size() > N)  // Should have a guard to make sure we always draw the most recent N numbers.
+        {
             firebaseData = firebaseData.subList(firebaseData.size()-N, firebaseData.size());
+        }
 
 
         // TODO: Set text description of the xAxis
@@ -217,11 +225,11 @@ public class Firebase_Bar extends AppCompatActivity {
         Log.d("MapleLeaf", df.format(mDate) +System.lineSeparator() + df1.format(mDate));
         return df.format(mDate) +System.lineSeparator() + df1.format(mDate);
     }
-
+/*
     private void setupTitleandHomeButton() {
         getSupportActionBar().setSubtitle(R.string.local_bar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    }
+    }*/
 
     /**
      * This hook is called whenever an item in your options menu is selected.
@@ -238,8 +246,8 @@ public class Firebase_Bar extends AppCompatActivity {
      * @return boolean Return false to allow normal menu processing to
      * proceed, true to consume it here.
      * @see #onCreateOptionsMenu
-     *//*
-    @Override
+     */
+   /* @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
@@ -248,6 +256,5 @@ public class Firebase_Bar extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
+    }*/
 }
-*/

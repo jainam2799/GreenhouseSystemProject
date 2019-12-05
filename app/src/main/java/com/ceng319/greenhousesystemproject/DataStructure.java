@@ -10,7 +10,7 @@ public class DataStructure {
     public DataStructure(){
 
     }
-    public DataStructure(String name, String temperature, String humidity, String message, String timestamp) {
+    public DataStructure(String humidity, String message,String name, String temperature,  String timestamp) {
         this.name = name;
         this.temperature = temperature;
         this.humidity = humidity;

@@ -52,6 +52,9 @@
     <string name="title_activity_help">HelpActivity</string>
     <string name="local_bar">localBar</string>
     <string name="title_activity_firebase__bar">Firebase_Bar</string>
+    <string name="title_activity_display_temp_and_moisture_readings">
+        DisplayTempAndMoistureReadings
+    </string>
 
 </resources>
 

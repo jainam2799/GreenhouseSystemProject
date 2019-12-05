@@ -10,13 +10,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class WaterSupplyControlActivity extends AppCompatActivity {
+public class WaterSupplyControlActivity extends AppCompatActivity{
 
     private FirebaseAuth mAuth;
     private static final String TAG = "MainActivity";

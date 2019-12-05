@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class Read_temperature extends AppCompatActivity{
+import java.lang.*;
+
+public class DisplayTempAndMoistureReadings extends AppCompatActivity {
     private FirebaseDatabase database;
     private DatabaseReference myRef;
     DataStructure mData;
@@ -71,14 +73,14 @@ public class Read_temperature extends AppCompatActivity{
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 DataStructure ds = dataSnapshot.getValue(DataStructure.class);
-                name.setText("Name: "+ ds.getName());
+                //name.setText(name.getText()+"Name: "+ds.getName());
 
                 temperature.setText("Temperature: "+ds.getTemperature());
-                humidity.setText("Humidity: " + ds.getHumidity());
-                message.setText("Message: " + ds.getMessage());
+                humidity.setText("Soil Moisture in %: " + ds.getHumidity());
+                //message.setText("Message: " + ds.getMessage());
 
                 // Convert from timestamp to Date and time
-                timestamp.setText(convertTimestamp(ds.getTimestamp()));
+                timestamp.setText("Observed at: "+convertTimestamp(ds.getTimestamp()));
             }
 
             private String convertTimestamp(String timestamp){

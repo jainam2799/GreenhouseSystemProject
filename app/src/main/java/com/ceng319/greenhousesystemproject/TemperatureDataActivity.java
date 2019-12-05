@@ -1,180 +1,260 @@
 package com.ceng319.greenhousesystemproject;
 
+
 import android.os.Bundle;
+import android.util.Log;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
 
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.IAxisValueFormatter;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
-public class TemperatureDataActivity extends AppCompatActivity {
+public class TemperatureDataActivity extends AppCompatActivity{
 
-    BarChart chart1 ;
-    ArrayList<BarEntry> BARENTRY1 ;
-    ArrayList<String> BarEntryLabels1 ;
-    BarDataSet Bardataset1 ;
-    BarData BARDATA1 ;
+    private BarChart barchart;
+    private FirebaseDatabase database = null;
     private FirebaseAuth mAuth;
+
+
+    private DatabaseReference ref = null;
+    private int N = 7;
+    String[] XLabels = new String[N];
+    List<DataStructure> firebaseData = new ArrayList<>();
+    private boolean firstTimeDrew;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_temperature_data);
+        //setupTitleandHomeButton();
+        // TODO 1: Find the chart
+        barchart = findViewById(R.id.firebasebar_chart);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        // TODO 2: Find the Database.
+        database = FirebaseDatabase.getInstance();
+        mAuth = FirebaseAuth.getInstance();
+        String path = "userdata/" + mAuth.getUid();
+        ref = database.getReference(path);
 
-        chart1 = (BarChart) findViewById(R.id.chart1);
-        BARENTRY1 = new ArrayList<>();
-        BarEntryLabels1 = new ArrayList<String>();
+        // TODO 3: Load the data from database.
+        loadDatabase(ref);
 
-        AddValuesToBARENTRY1();
-        AddValuesToBarEntryLabels1();
-
-        Bardataset1 = new BarDataSet(BARENTRY1, "Temperature Data in °C");
-        BARDATA1 = new BarData(BarEntryLabels1, Bardataset1);
-        Bardataset1.setColors(ColorTemplate.COLORFUL_COLORS);
-        chart1.setData(BARDATA1);
-        chart1.animateY(3000);
 
     }
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.mainreadingspage, menu);
-        //globalmenu = menu;
-        // setMenuItem(R.id.action_write, false);  // enable the write function.
-        //setMenuItem(R.id.action_read, false);  // enable the write function.
-        return true;
+
+    private void drawGraph() {
+        if (firebaseData.size() > N)  // Should have a guard to make sure we always draw the most recent N numbers.
+        {
+            firebaseData = firebaseData.subList(firebaseData.size()-N, firebaseData.size());
+        }
+
+
+        // TODO: Set text description of the xAxis
+
+        Description desc = new Description();
+        desc.setText("Temperature Data");
+        desc.setTextSize(20);
+        desc.setPosition(700,100);
+        barchart.setDescription(desc);
+        barchart.animateXY(2000,2000);
+        // TODO: Set the X-axis labels
+        setAndValidateLabels();
+
+        // TODO: Set LineData Entries
+        int i = 0;
+        List<BarEntry> entrylist = new ArrayList();
+        // TODO: Entry is the element of the data input to the chart. All the data should be organized as Entries' ArrayList
+        for (DataStructure ds: firebaseData){
+            BarEntry e = new BarEntry (i++, Float.parseFloat(ds.getTemperature()));
+            entrylist.add(e);
+        }
+
+        // TODO: find the dataset of the ArrayList.
+        BarDataSet dataset = new BarDataSet(entrylist, "Temperature in °C");
+        dataset.setColors(ColorTemplate.COLORFUL_COLORS);  // set the color of this chart.
+        dataset.setValueTextSize(14);
+        // TODO: Get the LineData Object from dataset.
+        BarData linedata = new BarData(dataset);
+        barchart.setData(linedata);
+        // TODO: This is a must to refresh the chart.
+        barchart.invalidate(); // refresh
     }
-    /*
-    private void setMenuItem(int id, boolean enable){
-        globalmenu.findItem(id).setEnabled(enable);
+
+    private void setAndValidateLabels() {
+        // TODO: Set the labels to be displayed.
+        XAxis xAxis = barchart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setLabelRotationAngle(-30f);  // rotate the xAxis label for 30 degrees.
+        xAxis.setValueFormatter(new IAxisValueFormatter(){
+            @Override
+            public String getFormattedValue(float value, AxisBase axis) {
+                // Seems to be a bug in the library code value should not be less than 0 or more than N-1.
+                // When asking for the most recent data.
+                if ((value <0) || (value > N-1))return "";
+                return XLabels[(int) value];
+            }
+        });
+        xAxis.setGranularity(1f); // minimum axis-step (interval) is 3
+    }
+
+    private void loadDatabase(DatabaseReference ref) {
+        // Last N data entries from Database, these are automatically the N most recent data
+        Query recentPostsQuery = ref.limitToLast(N).orderByChild("timestamp");
+
+        // NOTICE: Firebase Value event is always called after the ChildAdded event.
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Log.d("MapleLeaf", "finished");
+
+                for (int i=0; i< firebaseData.size(); i++){
+                    // TODO: Define the XLabels of the chart.
+                    XLabels[i] = convertTimestamp(firebaseData.get(i).getTimestamp());
+                }
+
+                // TODO 4: Now all the query data is in List firebaseData, Follow the similar procedure in Line activity.
+                drawGraph();
+                firstTimeDrew = true;
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+        recentPostsQuery.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                if (dataSnapshot != null && dataSnapshot.getValue() != null) {
+                    // TODO: handle all the returned data. Similar to the Firebase read structure event.
+                    DataStructure dataStructure = new DataStructure();
+                    dataStructure.setName(dataSnapshot.getValue(DataStructure.class).getName());
+                    dataStructure.setTemperature(dataSnapshot.getValue(DataStructure.class).getTemperature());
+                    dataStructure.setHumidity(dataSnapshot.getValue(DataStructure.class).getHumidity());
+                    dataStructure.setMessage(dataSnapshot.getValue(DataStructure.class).getMessage());
+                    String timestamp = dataSnapshot.getValue(DataStructure.class).getTimestamp();
+                    dataStructure.setTimestamp(timestamp);
+
+                    firebaseData.add(dataStructure);  // now all the data is in arraylist.
+                    Log.d("MapleLeaf", "dataStructure " + dataStructure.getTimestamp());
+                }
+                // TODO: if already drew but still come to here, there is only one possibility that a new node is added to the database.
+                if (firstTimeDrew)
+                    drawGraph();
+            }
+
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                if (dataSnapshot != null && dataSnapshot.getValue() != null) {
+                    // TODO: handle all the returned data. Similar to the Firebase read structure event.
+                    // TODO: This part of the code is to handle if there is any data changed on Firebase.
+                    DataStructure dataStructure = new DataStructure();
+                    dataStructure.setName(dataSnapshot.getValue(DataStructure.class).getName());
+                    dataStructure.setTemperature(dataSnapshot.getValue(DataStructure.class).getTemperature());
+                    dataStructure.setHumidity(dataSnapshot.getValue(DataStructure.class).getHumidity());
+                    dataStructure.setMessage(dataSnapshot.getValue(DataStructure.class).getMessage());
+                    String timestamp = dataSnapshot.getValue(DataStructure.class).getTimestamp();
+                    dataStructure.setTimestamp(timestamp);
+                    boolean updated = false;
+                    for (int i = 0; i<firebaseData.size(); i++){
+                        if (firebaseData.get(i).getTimestamp().equals(dataStructure.getTimestamp()))
+                        {
+                            firebaseData.set(i, dataStructure);
+                            updated = true;
+                        }
+                    }
+                    if (!updated)
+                        firebaseData.add(dataStructure);  // now all the data is in arraylist.
+
+                    Log.d("MapleLeaf", "dataStructure at " + dataStructure.getTimestamp() + " Updated");
+                }
+                // TODO 4: Now all the query data is in List firebaseData, Follow the similar procedure in Line activity.
+                drawGraph();
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private String convertTimestamp(String timestamp){
+
+        // Convert timestamp to text.
+        long yourSeconds = (long)Double.parseDouble(timestamp);
+        Date mDate = new Date(yourSeconds*1000);
+        DateFormat df = new SimpleDateFormat("dd MMM yyyy");
+        // df.setTimeZone(TimeZone.getTimeZone("Etc/GMT-5"));
+        DateFormat df1 = new SimpleDateFormat("hh:mm:ss");
+        Log.d("MapleLeaf", df.format(mDate) +System.lineSeparator() + df1.format(mDate));
+        return df.format(mDate) +System.lineSeparator() + df1.format(mDate);
+    }
+/*
+    private void setupTitleandHomeButton() {
+        getSupportActionBar().setSubtitle(R.string.local_bar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }*/
 
-    @Override
+    /**
+     * This hook is called whenever an item in your options menu is selected.
+     * The default implementation simply returns false to have the normal
+     * processing happen (calling the item's Runnable or sending a message to
+     * its Handler as appropriate).  You can use this method for any items
+     * for which you would like to do processing without those other
+     * facilities.
+     *
+     * <p>Derived classes should call through to the base class for it to
+     * perform the default menu handling.</p>
+     *
+     * @param item The menu item that was selected.
+     * @return boolean Return false to allow normal menu processing to
+     * proceed, true to consume it here.
+     * @see #onCreateOptionsMenu
+     */
+   /* @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        if (id == R.id.action_MainReadingsPage)
-        {
-            // TODO: Start the read option.
-            Intent ReadingsData = new Intent(getApplicationContext(), MainReadingsPageActivity.class);
-            startActivity(ReadingsData);
-            finish();
-            return true;
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
-        else if (id == R.id.action_TemperatureData)
-        {
-            // TODO: Start the read option.
-            Intent temperatureData = new Intent(getApplicationContext(), TemperatureDataActivity.class);
-            startActivity(temperatureData);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_SoilMoistureData){
-            // TODO: Start the write option.
-            Intent soilMoistureData = new Intent(getApplicationContext(), SoilMoistureDataActivity.class);
-            startActivity(soilMoistureData);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_WaterSuppyControl){
-            // TODO: Start the write option.
-            Intent waterSupplyControl = new Intent(getApplicationContext(), WaterSupplyControlActivity.class);
-            startActivity(waterSupplyControl);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_Settings){
-            // TODO: Start the write option.
-            Intent settings = new Intent(getApplicationContext(), SettingsActivity.class);
-            startActivity(settings);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_Help){
-            // TODO: Start the write option.
-            Intent help = new Intent(getApplicationContext(), HelpActivity.class);
-            startActivity(help);
-            finish();
-            return true;
-        }
-
-        else if (id == R.id.action_SignOut){
-            // TODO: Start the write option.
-            mAuth = FirebaseAuth.getInstance();
-            mAuth.signOut();
-            Intent signOut = new Intent(getApplicationContext(), LoginActivity.class);
-            startActivity(signOut);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_ReadData){
-            // TODO: Start the write option.
-            Intent readData = new Intent(getApplicationContext(), Read_temperature.class);
-            startActivity(readData);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_WriteData){
-            // TODO: Start the write option.
-            Intent writeData = new Intent(getApplicationContext(), Write_temperature.class);
-            startActivity(writeData);
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-
-
-
-
-    public void AddValuesToBarEntryLabels1(){
-
-        BarEntryLabels1.add("Monday");
-        BarEntryLabels1.add("Tuesday");
-        BarEntryLabels1.add("Wednesday");
-        BarEntryLabels1.add("Thursday");
-        BarEntryLabels1.add("Friday");
-        BarEntryLabels1.add("Saturday");
-        BarEntryLabels1.add("Sunday");
-
-    }
-    public void AddValuesToBARENTRY1(){
-
-        BARENTRY1.add(new BarEntry(23f, 0));
-        BARENTRY1.add(new BarEntry(18f, 1));
-        BARENTRY1.add(new BarEntry(17f, 2));
-        BARENTRY1.add(new BarEntry(21f, 3));
-        BARENTRY1.add(new BarEntry(25, 4));
-        BARENTRY1.add(new BarEntry(15, 5));
-        BARENTRY1.add(new BarEntry(20, 6));
-    }
-
+    }*/
 }
