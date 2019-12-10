@@ -48,7 +48,7 @@ public class DisplayTempAndMoistureReadings extends AppCompatActivity {
         this.setTitle("Read from Database");
         getDatabase();
         findAllViews();
-        reterieveData();
+       // reterieveData();
     }
 
     private void findAllViews(){

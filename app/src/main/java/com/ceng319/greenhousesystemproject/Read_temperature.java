@@ -189,7 +189,7 @@ public class Read_temperature extends AppCompatActivity{
             // TODO: Start the read option.
             Intent temperatureData = new Intent(getApplicationContext(), TemperatureDataActivity.class);
             startActivity(temperatureData);
-            finish();
+            //finish();
             return true;
         }
         else if (id == R.id.action_SoilMoistureData){

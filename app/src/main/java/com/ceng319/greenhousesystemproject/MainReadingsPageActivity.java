@@ -1,35 +1,48 @@
 package com.ceng319.greenhousesystemproject;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class MainReadingsPageActivity extends AppCompatActivity{
 
-    BarChart chart1 ;
-    BarChart chart2 ;
-    ArrayList<BarEntry> BARENTRY1 ;
-    ArrayList<String> BarEntryLabels1 ;
-    BarDataSet Bardataset1 ;
-    BarData BARDATA1 ;
-    ArrayList<BarEntry> BARENTRY2 ;
-    ArrayList<String> BarEntryLabels2 ;
-    BarDataSet Bardataset2 ;
-    BarData BARDATA2 ;
-    Button btn1;
+    private FirebaseDatabase database;
+    private DatabaseReference myRef;
+    DataStructure mData;
+
+    private TextView name;
+    private TextView temperature;
+    private TextView humidity;
+    private TextView message;
+    private TextView timestamp;
+    private Button buttonTemp;
+    private Button buttonSoilMoisture;
+
+
     private FirebaseAuth mAuth;
 
     @Override
@@ -39,55 +52,150 @@ public class MainReadingsPageActivity extends AppCompatActivity{
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        this.setTitle("Green House Readings");
+        getDatabase();
+        findAllViews();
+        //reterieveData();
 
-        //  btn1 = (Button) findViewById(R.id.tmpbtn);
-        chart1 = (BarChart) findViewById(R.id.chart1);
-        chart2 = (BarChart) findViewById(R.id.chart2);
 
-        BARENTRY1 = new ArrayList<>();
 
-        BarEntryLabels1 = new ArrayList<String>();
-
-        BARENTRY2 = new ArrayList<>();
-
-        BarEntryLabels2 = new ArrayList<String>();
-
-        AddValuesToBARENTRY1();
-
-        AddValuesToBarEntryLabels1();
-
-        AddValuesToBARENTRY2();
-
-        AddValuesToBarEntryLabels2();
-
-        Bardataset1 = new BarDataSet(BARENTRY1, "Temperature Data in °C");
-//Change was made here after implementing firbase_bar
-        BARDATA1 = new BarData( Bardataset1);
-
-        Bardataset1.setColors(ColorTemplate.COLORFUL_COLORS);
-
-        Bardataset2 = new BarDataSet(BARENTRY2, "Soil Moisture Data");
-
-        BARDATA2 = new BarData( Bardataset2);
-
-        Bardataset2.setColors(ColorTemplate.COLORFUL_COLORS);
-
-        chart1.setData(BARDATA1);
-        chart2.setData(BARDATA2);
-
-        chart1.animateY(3000);
-        chart2.animateY(3000);
-
-     /*   btn1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //setContentView(R.layout.activity_register);
-                Intent tmp_data = new Intent(HomeActivity.this, Temperature_data.class);
-                startActivity(tmp_data);
-            }
-        });*/
 
     }
+    private void gotoTemperatureGraphs() {
+        // TODO : Start the read option After login
+        Intent intentT = new Intent(getApplicationContext(), TemperatureDataActivity.class);
+        startActivity(intentT);
+        //finish();
+    }
+    private void gotoSoilMoistureGraphs() {
+        // TODO : Start the read option After login
+        Intent intentS = new Intent(getApplicationContext(), SoilMoistureDataActivity.class);
+        startActivity(intentS);
+        //finish();
+    }
+
+
+    private void findAllViews(){
+        //name = findViewById(R.id.readname);
+        temperature = findViewById(R.id.readtemperature);
+        //message = findViewById(R.id.readmessage);
+        timestamp = findViewById(R.id.readtimestamp);
+        humidity=findViewById(R.id.readsoilmoisture);
+        buttonTemp = findViewById(R.id.temperatureGraphs);
+        buttonSoilMoisture = findViewById(R.id.soilmoistureGraphs);
+
+        buttonTemp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gotoTemperatureGraphs();
+            }
+        });
+        buttonSoilMoisture.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gotoSoilMoistureGraphs();
+            }
+        });
+    }
+
+    private void getDatabase(){
+        // TODO: Find the reference form the database.
+        database = FirebaseDatabase.getInstance();
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        String path = "userdata/" + mAuth.getUid();  // read from the user account.
+        myRef = database.getReference(path);
+    }
+
+    private void reterieveData(){
+        // TODO: Get the data on a single node.
+        myRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                DataStructure ds = dataSnapshot.getValue(DataStructure.class);
+                //name.setText("Name: " + ds.getName());
+
+                temperature.setText("Temperature: " + ds.getTemperature());
+                humidity.setText("Soil moisture level in %: " + ds.getHumidity());
+                //message.setText("Message: " + ds.getMessage());
+
+                // Convert from timestamp to Date and time
+                timestamp.setText("Readings observed at: "+convertTimestamp(ds.getTimestamp()));
+            }
+
+            private String convertTimestamp(String timestamp) {
+
+                long yourSeconds = Long.valueOf(timestamp);
+                Date mDate = new Date(yourSeconds * 1000);
+                DateFormat df = new SimpleDateFormat("dd MMM yyyy hh:mm:ss a");
+                return df.format(mDate);
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                DataStructure ds = dataSnapshot.getValue(DataStructure.class);
+                name.setText("Name:      "+ ds.getName());
+                temperature.setText("Temperature:      "+ds.getTemperature());
+                humidity.setText("Humidity:      " + ds.getHumidity());
+                message.setText("Message:      " + ds.getMessage());
+
+                // Convert from timestamps to Date and time
+                timestamp.setText(convertTimestamp(ds.getTimestamp()));
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+        // TODO: Get the whole data array on a reference.
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                List<DataStructure> arraylist= new ArrayList<DataStructure>();
+
+                // TODO: Now data is retrieved, needs to process data.
+                if (dataSnapshot != null && dataSnapshot.getValue() != null) {
+
+                    // iterate all the items in the dataSnapshot
+                    for (DataSnapshot a : dataSnapshot.getChildren()) {
+                        DataStructure dataStructure = new DataStructure();
+                        dataStructure.setName(a.getValue(DataStructure.class).getName());
+                        dataStructure.setTemperature(a.getValue(DataStructure.class).getTemperature());
+                        dataStructure.setHumidity(a.getValue(DataStructure.class).getHumidity());
+                        dataStructure.setMessage(a.getValue(DataStructure.class).getMessage());
+                        dataStructure.setTimestamp(a.getValue(DataStructure.class).getTimestamp());
+
+                        arraylist.add(dataStructure);  // now all the data is in arraylist.
+                        Log.d("MapleLeaf", "dataStructure " + dataStructure.getTimestamp());
+                    }
+                }else
+                {
+                    Toast.makeText(getApplicationContext(), "No Data available", Toast.LENGTH_LONG).show();
+                }
+
+            }
+
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                // Getting data failed, log a message
+                Log.d("MapleLeaf", "Data Loading Canceled/Failed.", databaseError.toException());
+            }
+        });
+    }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -97,10 +205,6 @@ public class MainReadingsPageActivity extends AppCompatActivity{
         //setMenuItem(R.id.action_read, false);  // enable the write function.
         return true;
     }
-    /*
-    private void setMenuItem(int id, boolean enable){
-        globalmenu.findItem(id).setEnabled(enable);
-    }*/
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -194,52 +298,9 @@ public class MainReadingsPageActivity extends AppCompatActivity{
         return super.onOptionsItemSelected(item);
     }
 
-    public void AddValuesToBARENTRY2(){
-
-        BARENTRY2.add(new BarEntry(35f, 0));
-        BARENTRY2.add(new BarEntry(45f, 1));
-        BARENTRY2.add(new BarEntry(68f, 2));
-        BARENTRY2.add(new BarEntry(59f, 3));
-        BARENTRY2.add(new BarEntry(70f, 4));
-        BARENTRY2.add(new BarEntry(45f, 5));
-        BARENTRY2.add(new BarEntry(35f, 6));
-
-    }
-
-    public void AddValuesToBarEntryLabels1(){
-
-        BarEntryLabels1.add("Monday");
-        BarEntryLabels1.add("Tuesday");
-        BarEntryLabels1.add("Wednesday");
-        BarEntryLabels1.add("Thursday");
-        BarEntryLabels1.add("Friday");
-        BarEntryLabels1.add("Saturday");
-        BarEntryLabels1.add("Sunday");
-
-    }
 
 
-    public void AddValuesToBARENTRY1(){
 
 
-        BARENTRY1.add(new BarEntry(23f, 0));
-        BARENTRY1.add(new BarEntry(18f, 1));
-        BARENTRY1.add(new BarEntry(17f, 2));
-        BARENTRY1.add(new BarEntry(21f, 3));
-        BARENTRY1.add(new BarEntry(25, 4));
-        BARENTRY1.add(new BarEntry(15, 5));
-        BARENTRY1.add(new BarEntry(20, 6));
 
-    }
-    public void AddValuesToBarEntryLabels2(){
-
-        BarEntryLabels2.add("Monday");
-        BarEntryLabels2.add("Tuesday");
-        BarEntryLabels2.add("Wednesday");
-        BarEntryLabels2.add("Thursday");
-        BarEntryLabels2.add("Friday");
-        BarEntryLabels2.add("Saturday");
-        BarEntryLabels2.add("Sunday");
-
-    }
 }
