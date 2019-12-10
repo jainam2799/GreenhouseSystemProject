@@ -9,17 +9,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity
-            android:name=".DisplayTempAndMoistureReadings"
-            android:label="@string/title_activity_display_temp_and_moisture_readings"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity android:name=".CalenderActivity" />
-        <activity
-            android:name=".Firebase_Bar"
-            android:label="@string/title_activity_firebase__bar"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".Write_temperature" />
-        <activity android:name=".Read_temperature" />
         <activity
             android:name=".HelpActivity"
             android:label="@string/title_activity_help"

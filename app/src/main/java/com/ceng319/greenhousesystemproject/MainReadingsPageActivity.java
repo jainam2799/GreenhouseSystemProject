@@ -215,10 +215,10 @@ public class MainReadingsPageActivity extends AppCompatActivity{
 
         if (id == R.id.action_MainReadingsPage)
         {
-            // TODO: Start the read option.
+            /* // TODO: Start the read option.
             Intent ReadingsData = new Intent(getApplicationContext(), MainReadingsPageActivity.class);
             startActivity(ReadingsData);
-            //finish();
+            //finish();*/
             return true;
         }
         else if (id == R.id.action_TemperatureData)
@@ -236,13 +236,7 @@ public class MainReadingsPageActivity extends AppCompatActivity{
             //finish();
             return true;
         }
-        else if (id == R.id.action_FirebaseBar){
-            // TODO: Start the write option.
-            Intent FireBaseBar = new Intent(getApplicationContext(), Firebase_Bar.class);
-            startActivity(FireBaseBar);
-            //finish();
-            return true;
-        }
+
         else if (id == R.id.action_WaterSuppyControl){
             // TODO: Start the write option.
             Intent waterSupplyControl = new Intent(getApplicationContext(), WaterSupplyControlActivity.class);
@@ -274,27 +268,7 @@ public class MainReadingsPageActivity extends AppCompatActivity{
             finish();
             return true;
         }
-        else if (id == R.id.action_ReadData){
-            // TODO: Start the write option.
-            Intent readData = new Intent(getApplicationContext(), Read_temperature.class);
-            startActivity(readData);
-            //finish();
-            return true;
-        }
-        else if (id == R.id.action_WriteData){
-            // TODO: Start the write option.
-            Intent writeData = new Intent(getApplicationContext(), Write_temperature.class);
-            startActivity(writeData);
-            //finish();
-            return true;
-        }
-        else if (id == R.id.action_DisplayReadings){
-            // TODO: Start the write option.
-            Intent displayReadings = new Intent(getApplicationContext(), DisplayTempAndMoistureReadings.class);
-            startActivity(displayReadings);
-            //finish();
-            return true;
-        }
+
         return super.onOptionsItemSelected(item);
     }
 

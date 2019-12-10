@@ -109,20 +109,7 @@ public class HelpActivity extends AppCompatActivity{
             finish();
             return true;
         }
-        else if (id == R.id.action_ReadData){
-            // TODO: Start the write option.
-            Intent readData = new Intent(getApplicationContext(), Read_temperature.class);
-            startActivity(readData);
-            finish();
-            return true;
-        }
-        else if (id == R.id.action_WriteData){
-            // TODO: Start the write option.
-            Intent writeData = new Intent(getApplicationContext(), Write_temperature.class);
-            startActivity(writeData);
-            finish();
-            return true;
-        }
+
         return super.onOptionsItemSelected(item);
     }
 
